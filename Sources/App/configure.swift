@@ -17,16 +17,40 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
     services.register(middlewares)
 
-    // Configure a SQLite database
-    let sqlite = try SQLiteDatabase(storage: .memory)
-
-    // Register the configured SQLite database to the database config.
-    var databases = DatabasesConfig()
-    databases.add(database: sqlite, as: .sqlite)
-    services.register(databases)
+//    // Configure a SQLite database
+//    let sqlite = try SQLiteDatabase(storage: .memory)
+//
+//    // Register the configured SQLite database to the database config.
+//    var databases = DatabasesConfig()
+//    databases.add(database: sqlite, as: .sqlite)
+//    services.register(databases)
+    
+    try makeDatabase(&services)
 
     // Configure migrations
     var migrations = MigrationConfig()
-    migrations.add(model: Todo.self, database: .sqlite)
+    registSqliteModels(&migrations)
     services.register(migrations)
 }
+
+private func makeDatabase(_ services: inout Services) throws {
+    
+    let sqlite = try SQLiteDatabase(storage: .file(path: DirectoryConfig.detect().workDir + "data.sqlite"), threadPool: nil)
+    print("db path: \(sqlite.storage)")
+    var database = DatabasesConfig()
+    database.add(database: sqlite, as: .sqlite)
+    services.register(database)
+    
+}
+
+private func registSqliteModels(_ m:inout MigrationConfig) {
+    
+    m.add(model: Todo.self, database: .sqlite)
+    m.add(model: User.self, database: .sqlite)
+    m.add(model: Token.self, database: .sqlite)
+    
+    m.add(model: ArticleGroup.self, database: .sqlite)
+    m.add(model: Article.self, database: .sqlite)
+    
+}
+
